@@ -3,70 +3,57 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>امین املاک</title>
+<title>امین املاک PRO</title>
 
 <style>
 body{
 margin:0;
-font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto;
 direction:rtl;
 background:linear-gradient(135deg,#0f172a,#1e293b,#334155);
 color:white;
 }
 
-/* LOGIN */
 .loginBox{
 max-width:320px;
-margin:120px auto;
+margin:100px auto;
 background:rgba(255,255,255,0.1);
-backdrop-filter:blur(12px);
 padding:20px;
-border-radius:16px;
+border-radius:15px;
 text-align:center;
 }
+
+#app{display:none;padding:15px;}
 
 input,select,textarea{
 width:100%;
 padding:10px;
-margin:6px 0;
-border:none;
+margin:5px 0;
 border-radius:10px;
+border:none;
 font-size:14px;
 }
 
-input{
-background:white;
-color:black;
-}
+input,select,textarea{background:white;color:black;}
 
 button{
 width:100%;
 padding:12px;
 border:none;
 border-radius:12px;
-margin-top:8px;
+margin-top:6px;
 font-weight:bold;
 }
 
-.btn-green{background:#22c55e;color:white;}
-.btn-blue{background:#3b82f6;color:white;}
-.btn-red{background:#ef4444;color:white;}
-.btn-purple{background:#a855f7;color:white;}
-
-#app{display:none;padding:15px;}
-
-header{
-text-align:center;
-font-weight:bold;
-font-size:18px;
-margin-bottom:10px;
-}
+.green{background:#22c55e;color:white;}
+.red{background:#ef4444;color:white;}
+.blue{background:#3b82f6;color:white;}
+.purple{background:#a855f7;color:white;}
 
 .card{
 background:rgba(255,255,255,0.12);
-backdrop-filter:blur(12px);
 padding:12px;
-border-radius:16px;
+border-radius:15px;
 margin:10px 0;
 }
 
@@ -93,12 +80,7 @@ display:none;
 align-items:center;
 justify-content:center;
 }
-
-#lightbox img{
-max-width:90%;
-max-height:90%;
-border-radius:12px;
-}
+#lightbox img{max-width:90%;max-height:90%;}
 </style>
 </head>
 
@@ -106,31 +88,34 @@ border-radius:12px;
 
 <!-- LOGIN -->
 <div id="login" class="loginBox">
-<h2>🏢 امین املاک</h2>
-<p>ورود</p>
-
+<h2>🏠 امین املاک</h2>
 <input type="password" id="pass" placeholder="رمز">
-<button class="btn-purple" onclick="loginCheck()">ورود</button>
+<button class="purple" onclick="login()">ورود</button>
 <p id="err"></p>
 </div>
 
 <!-- APP -->
 <div id="app">
 
-<header>🏢 امین املاک شرکت</header>
-
 <h3>➕ ثبت ملک</h3>
 
 <input id="title" placeholder="عنوان">
 <input id="address" placeholder="آدرس">
+<input id="region" placeholder="منطقه">
 
-<select id="type" onchange="togglePrice()">
+<select id="type" onchange="toggle()">
 <option value="فروش">فروش</option>
 <option value="اجاره">اجاره</option>
 </select>
 
+<select id="status">
+<option value="موجود">موجود</option>
+<option value="فروخته شده">فروخته شده</option>
+<option value="اجاره داده شده">اجاره داده شده</option>
+</select>
+
 <div id="saleBox">
-<input id="price" placeholder="قیمت (میلیون تومان)">
+<input id="price" placeholder="قیمت (میلیون)">
 </div>
 
 <div id="rentBox" style="display:none;">
@@ -138,25 +123,26 @@ border-radius:12px;
 <input id="rent" placeholder="اجاره">
 </div>
 
+<input id="area" placeholder="متراژ">
+<input id="rooms" placeholder="اتاق">
+<input id="age" placeholder="سن بنا">
+
 <input id="owner" placeholder="مالک">
 <input id="phone" placeholder="تلفن">
-<textarea id="details" placeholder="توضیحات"></textarea>
+
+<textarea id="details" placeholder="توضیحات کامل"></textarea>
 
 <input type="file" id="img" multiple>
 
-<button class="btn-green" onclick="saveProperty()">ثبت ملک</button>
-<button class="btn-blue" onclick="downloadBackup()">📤 بکاپ</button>
+<button class="green" onclick="save()">ثبت ملک</button>
+<button class="blue" onclick="backup()">بکاپ</button>
 
-<input type="file" id="restore" style="display:none" onchange="restoreBackup(this)">
-<button class="btn-purple" onclick="restore.click()">📥 بازیابی بکاپ</button>
+<input type="file" id="restoreFile" style="display:none" onchange="restore(this)">
+<button class="purple" onclick="restoreFile.click()">بازیابی</button>
 
-<h3>📋 انتخاب ملک</h3>
+<h3>📋 لیست املاک</h3>
 
-<select id="selector" onchange="showProperty()">
-<option value="">-- انتخاب --</option>
-</select>
-
-<div id="view"></div>
+<div id="list"></div>
 
 </div>
 
@@ -166,43 +152,41 @@ border-radius:12px;
 
 <script>
 
-let data = JSON.parse(localStorage.getItem("amlak_company_fixed") || "[]");
+let data = JSON.parse(localStorage.getItem("amlak_pro_final") || "[]");
 
-function loginCheck(){
+function login(){
 if(pass.value==="4029"){
 login.style.display="none";
 app.style.display="block";
-updateSelector();
-}else{
-err.innerText="❌ رمز اشتباه است";
-}
+render();
+}else err.innerText="❌ رمز اشتباه";
 }
 
-function togglePrice(){
-saleBox.style.display = type.value==="فروش" ? "block":"none";
-rentBox.style.display = type.value==="اجاره" ? "block":"none";
+function toggle(){
+saleBox.style.display = type.value==="فروش"?"block":"none";
+rentBox.style.display = type.value==="اجاره"?"block":"none";
 }
 
-/* ---------- SAVE (FIXED) ---------- */
-function saveProperty(){
+/* ---------- FIX SAVE (IMPORTANT) ---------- */
+function save(){
 
 let files = img.files;
 let images = [];
 
-if(files.length===0){
+if(files.length === 0){
 store([]);
 return;
 }
 
-let loaded=0;
+let count=0;
 
 for(let i=0;i<files.length;i++){
-let reader=new FileReader();
+let reader = new FileReader();
 
 reader.onload=function(e){
 images.push(e.target.result);
-loaded++;
-if(loaded===files.length) store(images);
+count++;
+if(count===files.length) store(images);
 };
 
 reader.readAsDataURL(files[i]);
@@ -215,105 +199,112 @@ let obj={
 id:Date.now(),
 title:title.value,
 address:address.value,
+region:region.value,
 type:type.value,
+status:status.value,
+price:type.value==="فروش"?price.value:null,
+mortgage:type.value==="اجاره"?mortgage.value:null,
+rent:type.value==="اجاره"?rent.value:null,
+area:area.value,
+rooms:rooms.value,
+age:age.value,
 owner:owner.value,
 phone:phone.value,
 details:details.value,
-images:images,
-price:type.value==="فروش"?price.value:null,
-mortgage:type.value==="اجاره"?mortgage.value:null,
-rent:type.value==="اجاره"?rent.value:null
+images:images
 };
 
 data.push(obj);
-localStorage.setItem("amlak_company_fixed",JSON.stringify(data));
+localStorage.setItem("amlak_pro_final",JSON.stringify(data));
 
 clear();
-updateSelector();
-
-alert("✔ ثبت شد");
+render();
 }
 
 function clear(){
 title.value="";
 address.value="";
+region.value="";
 price.value="";
 mortgage.value="";
 rent.value="";
+area.value="";
+rooms.value="";
+age.value="";
 owner.value="";
 phone.value="";
 details.value="";
 img.value="";
 }
 
-/* dropdown */
-function updateSelector(){
-selector.innerHTML=`<option value="">-- انتخاب --</option>`;
-data.forEach(x=>{
-selector.innerHTML+=`<option value="${x.id}">${x.title}</option>`;
-});
+function del(id){
+data=data.filter(x=>x.id!==id);
+localStorage.setItem("amlak_pro_final",JSON.stringify(data));
+render();
 }
 
-/* view */
-function showProperty(){
+/* ---------- RENDER ---------- */
+function render(){
 
-let id=selector.value;
-let x=data.find(i=>i.id==id);
-if(!x){view.innerHTML="";return;}
+list.innerHTML="";
+
+data.forEach(x=>{
 
 let priceText =
 x.type==="فروش"
-? `💰 ${x.price} میلیون تومان`
-: `🏦 رهن: ${x.mortgage} | اجاره: ${x.rent}`;
+? `💰 ${x.price}`
+: `🏦 ${x.mortgage} | ${x.rent}`;
 
-let gallery="";
+let imgs="";
 if(x.images){
-gallery=`<div class="gallery">`+
+imgs=`<div class="gallery">`+
 x.images.map(i=>`<img src="${i}" onclick="openImg('${i}')">`).join("")+
 `</div>`;
 }
 
-view.innerHTML=`
+list.innerHTML+=`
 <div class="card">
 <b>${x.title}</b><br>
-📍 ${x.address}<br>
+📍 ${x.address} (${x.region})<br>
+📌 وضعیت: ${x.status}<br>
 ${priceText}<br>
-🏷 ${x.type}<br>
-👤 ${x.owner}<br>
-📞 ${x.phone}<br>
+🏠 ${x.area} متر | ${x.rooms} خواب | ${x.age} سال<br>
+👤 ${x.owner} | 📞 ${x.phone}<br>
 📝 ${x.details}<br>
-${gallery}
+
+${imgs}
+
+<button class="red" onclick="del(${x.id})">حذف</button>
 </div>
 `;
+});
 }
 
-/* lightbox */
 function openImg(src){
 lightboxImg.src=src;
 lightbox.style.display="flex";
 }
 
-/* BACKUP */
-function downloadBackup(){
+function backup(){
 let blob=new Blob([JSON.stringify(data)],{type:"application/json"});
 let a=document.createElement("a");
 a.href=URL.createObjectURL(blob);
-a.download="amin-amlak-backup.json";
+a.download="amlak-backup.json";
 a.click();
 }
 
-function restoreBackup(input){
+function restore(input){
 let file=input.files[0];
 let reader=new FileReader();
 reader.onload=function(e){
 data=JSON.parse(e.target.result);
-localStorage.setItem("amlak_company_fixed",JSON.stringify(data));
-updateSelector();
+localStorage.setItem("amlak_pro_final",JSON.stringify(data));
+render();
 };
 reader.readAsText(file);
 }
 
-updateSelector();
+render();
 
 </script>
 

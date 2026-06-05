@@ -3,37 +3,105 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>امین املاک</title>
+<title>امین املاک PRO</title>
 
 <style>
-body{font-family:sans-serif;direction:rtl;margin:0;background:#f3f4f6;}
-header{background:#111827;color:white;padding:15px;text-align:center;}
+body{
+font-family:sans-serif;
+direction:rtl;
+margin:0;
+background:#eef2f7;
+}
+
+header{
+background:#0f172a;
+color:white;
+padding:15px;
+text-align:center;
+font-weight:bold;
+}
+
+.stats{
+display:flex;
+justify-content:space-around;
+background:#1e293b;
+color:white;
+padding:10px;
+font-size:13px;
+}
+
 .container{padding:15px;}
-input,select,textarea{width:100%;padding:10px;margin:5px 0;border-radius:10px;}
-button{width:100%;padding:12px;background:#16a34a;color:white;border:none;border-radius:10px;}
-.card{background:white;padding:10px;margin:10px 0;border-radius:10px;}
-img{width:100%;margin-top:5px;border-radius:10px;}
+
+input,select,textarea{
+width:100%;
+padding:10px;
+margin:5px 0;
+border-radius:10px;
+border:1px solid #ccc;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+margin-top:8px;
+font-weight:bold;
+}
+
+.add{background:#22c55e;color:white;}
+.del{background:#ef4444;color:white;}
+.vip{background:#f59e0b;color:black;}
+.edit{background:#3b82f6;color:white;}
+
+.card{
+background:white;
+padding:10px;
+margin:10px 0;
+border-radius:12px;
+box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
+
+img{
+width:100%;
+border-radius:10px;
+margin-top:5px;
+}
 </style>
 </head>
 
 <body>
 
-<header>🏠 امین املاک PWA</header>
+<header>🏠 امین املاک PRO</header>
+
+<div class="stats">
+<div>📦 کل: <span id="total">0</span></div>
+<div>🏷 فروش: <span id="saleCount">0</span></div>
+<div>🏠 اجاره: <span id="rentCount">0</span></div>
+</div>
 
 <div class="container">
 
 <input id="search" placeholder="جستجو..." onkeyup="render()">
 
-<h3>➕ ثبت ملک</h3>
+<h3>➕ ثبت / ویرایش ملک</h3>
 
 <input id="title" placeholder="عنوان">
 <input id="address" placeholder="آدرس">
-<input id="price" placeholder="قیمت">
 
-<select id="type">
-<option>فروش</option>
-<option>اجاره</option>
+<select id="type" onchange="togglePrice()">
+<option value="فروش">فروش</option>
+<option value="اجاره">اجاره</option>
 </select>
+
+<div id="saleBox">
+<input id="price" placeholder="قیمت (میلیون تومان)">
+</div>
+
+<div id="rentBox" style="display:none;">
+<input id="mortgage" placeholder="رهن (میلیون تومان)">
+<input id="rent" placeholder="اجاره (میلیون تومان)">
+</div>
 
 <input id="owner" placeholder="مالک">
 <input id="phone" placeholder="تلفن">
@@ -41,7 +109,7 @@ img{width:100%;margin-top:5px;border-radius:10px;}
 
 <input type="file" id="img">
 
-<button onclick="add()">ثبت</button>
+<button class="add" onclick="saveProperty()">ثبت / ذخیره</button>
 
 <h3>📋 لیست املاک</h3>
 <div id="list"></div>
@@ -50,58 +118,138 @@ img{width:100%;margin-top:5px;border-radius:10px;}
 
 <script>
 
-let data = JSON.parse(localStorage.getItem("amlak") || "[]");
+let data = JSON.parse(localStorage.getItem("amlakpro") || "[]");
+let editId = null;
 
-function add(){
+function togglePrice(){
+let t = type.value;
+saleBox.style.display = t==="فروش" ? "block":"none";
+rentBox.style.display = t==="اجاره" ? "block":"none";
+}
 
-let file = document.getElementById("img").files[0];
+function saveProperty(){
+
+let file = img.files[0];
 
 let reader = new FileReader();
 
 reader.onload = function(e){
 
-let item = {
+let obj = {
+id: editId || Date.now(),
 title:title.value,
 address:address.value,
-price:price.value,
 type:type.value,
 owner:owner.value,
 phone:phone.value,
 details:details.value,
-img:e.target.result
+img:e.target.result,
+vip:false,
+price: type.value==="فروش" ? price.value : null,
+mortgage: type.value==="اجاره" ? mortgage.value : null,
+rent: type.value==="اجاره" ? rent.value : null
 };
 
-data.push(item);
-localStorage.setItem("amlak", JSON.stringify(data));
+if(editId){
+data = data.map(x=>x.id===editId ? obj : x);
+editId = null;
+}else{
+data.push(obj);
+}
+
+localStorage.setItem("amlakpro", JSON.stringify(data));
+clear();
 render();
 }
 
 if(file) reader.readAsDataURL(file);
+else reader.onload({target:{result:null}});
+}
+
+function clear(){
+title.value="";
+address.value="";
+price.value="";
+mortgage.value="";
+rent.value="";
+owner.value="";
+phone.value="";
+details.value="";
+img.value="";
+}
+
+function deleteItem(id){
+data = data.filter(x=>x.id!==id);
+localStorage.setItem("amlakpro", JSON.stringify(data));
+render();
+}
+
+function editItem(id){
+let x = data.find(i=>i.id===id);
+
+title.value = x.title;
+address.value = x.address;
+type.value = x.type;
+owner.value = x.owner;
+phone.value = x.phone;
+details.value = x.details;
+
+togglePrice();
+
+price.value = x.price || "";
+mortgage.value = x.mortgage || "";
+rent.value = x.rent || "";
+
+editId = id;
+}
+
+function toggleVIP(id){
+let x = data.find(i=>i.id===id);
+x.vip = !x.vip;
+localStorage.setItem("amlakpro", JSON.stringify(data));
+render();
 }
 
 function render(){
 
 let s = search.value.toLowerCase();
-let list = document.getElementById("list");
 
-list.innerHTML="";
-
-data.filter(x=>
+let filtered = data.filter(x=>
 x.title.includes(s) ||
 x.address.includes(s) ||
+x.owner.includes(s) ||
 x.phone.includes(s)
-).forEach(x=>{
+);
+
+document.getElementById("total").innerText = data.length;
+document.getElementById("saleCount").innerText = data.filter(x=>x.type==="فروش").length;
+document.getElementById("rentCount").innerText = data.filter(x=>x.type==="اجاره").length;
+
+let list = document.getElementById("list");
+list.innerHTML="";
+
+filtered.forEach(x=>{
+
+let priceText = x.type==="فروش"
+? `💰 ${x.price} میلیون تومان`
+: `🏦 رهن: ${x.mortgage} | اجاره: ${x.rent} میلیون`;
 
 list.innerHTML += `
-<div class="card">
-<b>${x.title}</b><br>
+<div class="card" style="border:${x.vip?'2px solid gold':''}">
+<b>${x.title} ${x.vip?'⭐ VIP':''}</b><br>
 📍 ${x.address}<br>
-💰 ${x.price}<br>
+${priceText}<br>
 🏷 ${x.type}<br>
 👤 ${x.owner}<br>
-📞 ${x.phone}<br>
-${x.details}<br>
+📞 <a href="tel:${x.phone}">${x.phone}</a><br>
+📝 ${x.details}<br>
+
 ${x.img ? `<img src="${x.img}">` : ""}
+
+<button class="vip" onclick="toggleVIP(${x.id})">VIP</button>
+<button class="edit" onclick="editItem(${x.id})">ویرایش</button>
+<button class="del" onclick="deleteItem(${x.id})">حذف</button>
+
 </div>
 `;
 });

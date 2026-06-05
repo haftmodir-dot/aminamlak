@@ -3,80 +3,138 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>امین املاک ULTRA+</title>
+<title>امین املاک</title>
 
 <style>
 body{
+margin:0;
 font-family:sans-serif;
 direction:rtl;
-margin:0;
-background:#eef2f7;
-}
-
-header{
-background:#0f172a;
+background:linear-gradient(135deg,#0f172a,#1e293b,#334155);
 color:white;
-padding:15px;
-text-align:center;
-font-weight:bold;
 }
 
-.container{padding:15px;}
+/* LOGIN */
+.loginBox{
+max-width:320px;
+margin:120px auto;
+background:rgba(255,255,255,0.1);
+backdrop-filter:blur(10px);
+padding:20px;
+border-radius:15px;
+text-align:center;
+box-shadow:0 0 20px rgba(0,0,0,0.3);
+}
 
 input,select,textarea{
 width:100%;
 padding:10px;
-margin:5px 0;
+margin:6px 0;
+border:none;
 border-radius:10px;
-border:1px solid #ccc;
+outline:none;
+}
+
+input{
+background:rgba(255,255,255,0.9);
+color:black;
 }
 
 button{
 width:100%;
 padding:12px;
 border:none;
-border-radius:10px;
+border-radius:12px;
 margin-top:8px;
 font-weight:bold;
+cursor:pointer;
 }
 
-.add{background:#22c55e;color:white;}
-.del{background:#ef4444;color:white;}
+.btn-green{background:#22c55e;color:white;}
+.btn-blue{background:#3b82f6;color:white;}
+.btn-red{background:#ef4444;color:white;}
+.btn-purple{background:#a855f7;color:white;}
+.btn-orange{background:#f59e0b;color:black;}
+
+/* APP */
+#app{display:none;padding:15px;}
+
+header{
+text-align:center;
+font-size:20px;
+font-weight:bold;
+margin-bottom:10px;
+}
 
 .card{
-background:white;
-padding:10px;
+background:rgba(255,255,255,0.12);
+backdrop-filter:blur(10px);
+padding:12px;
+border-radius:15px;
 margin:10px 0;
-border-radius:12px;
-box-shadow:0 2px 5px rgba(0,0,0,0.1);
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
 }
 
-img{
-width:100%;
-border-radius:10px;
-margin-top:5px;
+select{
+background:white;
+color:black;
 }
 
 .gallery{
 display:flex;
-gap:5px;
+gap:6px;
 overflow-x:auto;
+margin-top:8px;
 }
 
 .gallery img{
-width:120px;
-height:90px;
+width:100px;
+height:80px;
 object-fit:cover;
-flex-shrink:0;
+border-radius:10px;
+cursor:pointer;
+transition:0.2s;
+}
+
+.gallery img:hover{
+transform:scale(1.1);
+}
+
+#lightbox{
+position:fixed;
+top:0;left:0;
+width:100%;height:100%;
+background:rgba(0,0,0,0.9);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+#lightbox img{
+max-width:90%;
+max-height:90%;
+border-radius:12px;
 }
 </style>
 </head>
 
 <body>
 
-<header>🏠 امین املاک ULTRA+</header>
+<!-- LOGIN -->
+<div id="login" class="loginBox">
+<h2>🏢 امین املاک</h2>
+<p>ورود به سیستم شرکت</p>
 
-<div class="container">
+<input type="password" id="pass" placeholder="رمز عبور">
+<button class="btn-purple" onclick="checkLogin()">ورود</button>
+
+<p id="err" style="color:#ff6b6b;"></p>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+<header>🏢 امین املاک - نسخه شرکت</header>
 
 <h3>➕ ثبت ملک</h3>
 
@@ -103,7 +161,7 @@ flex-shrink:0;
 
 <input type="file" id="img" multiple>
 
-<button class="add" onclick="saveProperty()">ثبت ملک</button>
+<button class="btn-green" onclick="saveProperty()">ثبت ملک</button>
 
 <h3>📋 انتخاب ملک</h3>
 
@@ -115,38 +173,48 @@ flex-shrink:0;
 
 </div>
 
+<div id="lightbox" onclick="this.style.display='none'">
+<img id="lightboxImg">
+</div>
+
 <script>
 
-let data = JSON.parse(localStorage.getItem("amlak_ultra_plus") || "[]");
+let data = JSON.parse(localStorage.getItem("amlak_modern") || "[]");
 
-function togglePrice(){
-let t = type.value;
-saleBox.style.display = t==="فروش" ? "block":"none";
-rentBox.style.display = t==="اجاره" ? "block":"none";
+/* 🔐 LOGIN */
+function checkLogin(){
+if(pass.value === "4029"){
+login.style.display="none";
+app.style.display="block";
+updateSelector();
+}else{
+err.innerText="❌ رمز اشتباه است";
+}
 }
 
+/* toggle */
+function togglePrice(){
+saleBox.style.display = type.value==="فروش" ? "block":"none";
+rentBox.style.display = type.value==="اجاره" ? "block":"none";
+}
+
+/* save */
 function saveProperty(){
 
 let files = img.files;
-let images = [];
+let images=[];
 
-let loaded = 0;
+if(files.length===0){store([]);return;}
 
-if(files.length === 0){
-store([]);
-return;
-}
+let loaded=0;
 
 for(let i=0;i<files.length;i++){
-let reader = new FileReader();
+let reader=new FileReader();
 
-reader.onload = function(e){
+reader.onload=function(e){
 images.push(e.target.result);
 loaded++;
-
-if(loaded === files.length){
-store(images);
-}
+if(loaded===files.length) store(images);
 };
 
 reader.readAsDataURL(files[i]);
@@ -155,8 +223,8 @@ reader.readAsDataURL(files[i]);
 
 function store(images){
 
-let obj = {
-id: Date.now(),
+let obj={
+id:Date.now(),
 title:title.value,
 address:address.value,
 type:type.value,
@@ -164,17 +232,16 @@ owner:owner.value,
 phone:phone.value,
 details:details.value,
 images:images,
-price: type.value==="فروش" ? price.value : null,
-mortgage: type.value==="اجاره" ? mortgage.value : null,
-rent: type.value==="اجاره" ? rent.value : null
+price:type.value==="فروش"?price.value:null,
+mortgage:type.value==="اجاره"?mortgage.value:null,
+rent:type.value==="اجاره"?rent.value:null
 };
 
 data.push(obj);
-localStorage.setItem("amlak_ultra_plus", JSON.stringify(data));
+localStorage.setItem("amlak_modern",JSON.stringify(data));
 
 clear();
 updateSelector();
-alert("ثبت شد ✔");
 }
 
 function clear(){
@@ -189,51 +256,51 @@ details.value="";
 img.value="";
 }
 
+/* dropdown */
 function updateSelector(){
-
-selector.innerHTML = `<option value="">-- انتخاب ملک --</option>`;
-
+selector.innerHTML=`<option value="">-- انتخاب ملک --</option>`;
 data.forEach(x=>{
-selector.innerHTML += `<option value="${x.id}">${x.title}</option>`;
+selector.innerHTML+=`<option value="${x.id}">${x.title}</option>`;
 });
 }
 
+/* show */
 function showProperty(){
 
-let id = selector.value;
-let x = data.find(i=>i.id == id);
-
-if(!x){
-view.innerHTML="";
-return;
-}
+let id=selector.value;
+let x=data.find(i=>i.id==id);
+if(!x){view.innerHTML="";return;}
 
 let priceText =
 x.type==="فروش"
 ? `💰 ${x.price} میلیون تومان`
 : `🏦 رهن: ${x.mortgage} | اجاره: ${x.rent} میلیون`;
 
-let imgs = "";
-
-if(x.images && x.images.length){
-imgs = `<div class="gallery">` +
-x.images.map(i=>`<img src="${i}">`).join("") +
+let gallery="";
+if(x.images){
+gallery=`<div class="gallery">`+
+x.images.map(i=>`<img src="${i}" onclick="openImg('${i}')">`).join("")+
 `</div>`;
 }
 
-view.innerHTML = `
+view.innerHTML=`
 <div class="card">
 <b>${x.title}</b><br>
 📍 ${x.address}<br>
 ${priceText}<br>
 🏷 ${x.type}<br>
 👤 ${x.owner}<br>
-📞 <a href="tel:${x.phone}">${x.phone}</a><br>
+📞 ${x.phone}<br>
 📝 ${x.details}<br>
-
-${imgs}
+${gallery}
 </div>
 `;
+}
+
+/* lightbox */
+function openImg(src){
+lightboxImg.src=src;
+lightbox.style.display="flex";
 }
 
 updateSelector();

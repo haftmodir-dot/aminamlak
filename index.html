@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>امین املاک ULTRA</title>
+<title>امین املاک ULTRA+</title>
 
 <style>
 body{
@@ -19,15 +19,6 @@ color:white;
 padding:15px;
 text-align:center;
 font-weight:bold;
-}
-
-.stats{
-display:flex;
-justify-content:space-around;
-background:#111827;
-color:white;
-padding:10px;
-font-size:12px;
 }
 
 .container{padding:15px;}
@@ -51,19 +42,6 @@ font-weight:bold;
 
 .add{background:#22c55e;color:white;}
 .del{background:#ef4444;color:white;}
-.vip{background:#f59e0b;color:black;}
-.edit{background:#3b82f6;color:white;}
-
-.filterBar{
-display:flex;
-gap:5px;
-}
-
-.filterBar button{
-flex:1;
-background:#334155;
-color:white;
-}
 
 .card{
 background:white;
@@ -78,25 +56,29 @@ width:100%;
 border-radius:10px;
 margin-top:5px;
 }
+
+.gallery{
+display:flex;
+gap:5px;
+overflow-x:auto;
+}
+
+.gallery img{
+width:120px;
+height:90px;
+object-fit:cover;
+flex-shrink:0;
+}
 </style>
 </head>
 
 <body>
 
-<header>🏠 امین املاک ULTRA</header>
-
-<div class="stats">
-<div>📦 کل: <span id="total">0</span></div>
-<div>🏷 فروش: <span id="saleCount">0</span></div>
-<div>🏠 اجاره: <span id="rentCount">0</span></div>
-<div>⭐ VIP: <span id="vipCount">0</span></div>
-</div>
+<header>🏠 امین املاک ULTRA+</header>
 
 <div class="container">
 
-<input id="search" placeholder="جستجو..." onkeyup="render()">
-
-<h3>➕ ثبت / ویرایش ملک</h3>
+<h3>➕ ثبت ملک</h3>
 
 <input id="title" placeholder="عنوان">
 <input id="address" placeholder="آدرس">
@@ -106,12 +88,10 @@ margin-top:5px;
 <option value="اجاره">اجاره</option>
 </select>
 
-<!-- فروش -->
 <div id="saleBox">
 <input id="price" placeholder="قیمت (میلیون تومان)">
 </div>
 
-<!-- اجاره -->
 <div id="rentBox" style="display:none;">
 <input id="mortgage" placeholder="رهن (میلیون تومان)">
 <input id="rent" placeholder="اجاره (میلیون تومان)">
@@ -121,27 +101,23 @@ margin-top:5px;
 <input id="phone" placeholder="تلفن">
 <textarea id="details" placeholder="توضیحات"></textarea>
 
-<input type="file" id="img">
+<input type="file" id="img" multiple>
 
-<button class="add" onclick="saveProperty()">ثبت / ذخیره</button>
+<button class="add" onclick="saveProperty()">ثبت ملک</button>
 
-<div class="filterBar">
-<button onclick="setFilter('all')">همه</button>
-<button onclick="setFilter('فروش')">فروش</button>
-<button onclick="setFilter('اجاره')">اجاره</button>
-<button onclick="setFilter('vip')">VIP</button>
-</div>
+<h3>📋 انتخاب ملک</h3>
 
-<h3>📋 لیست املاک</h3>
-<div id="list"></div>
+<select id="selector" onchange="showProperty()">
+<option value="">-- انتخاب ملک --</option>
+</select>
+
+<div id="view"></div>
 
 </div>
 
 <script>
 
-let data = JSON.parse(localStorage.getItem("amlak_ultra") || "[]");
-let editId = null;
-let filter = "all";
+let data = JSON.parse(localStorage.getItem("amlak_ultra_plus") || "[]");
 
 function togglePrice(){
 let t = type.value;
@@ -151,46 +127,54 @@ rentBox.style.display = t==="اجاره" ? "block":"none";
 
 function saveProperty(){
 
-let file = img.files[0];
+let files = img.files;
+let images = [];
 
+let loaded = 0;
+
+if(files.length === 0){
+store([]);
+return;
+}
+
+for(let i=0;i<files.length;i++){
 let reader = new FileReader();
 
 reader.onload = function(e){
+images.push(e.target.result);
+loaded++;
+
+if(loaded === files.length){
+store(images);
+}
+};
+
+reader.readAsDataURL(files[i]);
+}
+}
+
+function store(images){
 
 let obj = {
-id: editId || Date.now(),
+id: Date.now(),
 title:title.value,
 address:address.value,
 type:type.value,
 owner:owner.value,
 phone:phone.value,
 details:details.value,
-img:e.target.result,
-vip:false,
-
+images:images,
 price: type.value==="فروش" ? price.value : null,
 mortgage: type.value==="اجاره" ? mortgage.value : null,
 rent: type.value==="اجاره" ? rent.value : null
 };
 
-if(editId){
-data = data.map(x=>x.id===editId ? obj : x);
-editId = null;
-}else{
 data.push(obj);
-}
+localStorage.setItem("amlak_ultra_plus", JSON.stringify(data));
 
-save();
 clear();
-render();
-}
-
-if(file) reader.readAsDataURL(file);
-else reader.onload({target:{result:null}});
-}
-
-function save(){
-localStorage.setItem("amlak_ultra", JSON.stringify(data));
+updateSelector();
+alert("ثبت شد ✔");
 }
 
 function clear(){
@@ -205,82 +189,41 @@ details.value="";
 img.value="";
 }
 
-function deleteItem(id){
-data = data.filter(x=>x.id!==id);
-save();
-render();
-}
+function updateSelector(){
 
-function editItem(id){
-let x = data.find(i=>i.id===id);
+selector.innerHTML = `<option value="">-- انتخاب ملک --</option>`;
 
-title.value=x.title;
-address.value=x.address;
-type.value=x.type;
-owner.value=x.owner;
-phone.value=x.phone;
-details.value=x.details;
-
-togglePrice();
-
-price.value=x.price||"";
-mortgage.value=x.mortgage||"";
-rent.value=x.rent||"";
-
-editId=id;
-}
-
-function toggleVIP(id){
-let x = data.find(i=>i.id===id);
-x.vip=!x.vip;
-save();
-render();
-}
-
-function setFilter(f){
-filter=f;
-render();
-}
-
-function render(){
-
-let s = search.value.toLowerCase();
-
-let filtered = data.filter(x=>{
-
-let matchSearch =
-x.title.includes(s) ||
-x.address.includes(s) ||
-x.owner.includes(s) ||
-x.phone.includes(s);
-
-let matchFilter =
-filter==="all" ||
-(filter==="فروش" && x.type==="فروش") ||
-(filter==="اجاره" && x.type==="اجاره") ||
-(filter==="vip" && x.vip);
-
-return matchSearch && matchFilter;
+data.forEach(x=>{
+selector.innerHTML += `<option value="${x.id}">${x.title}</option>`;
 });
+}
 
-document.getElementById("total").innerText = data.length;
-document.getElementById("saleCount").innerText = data.filter(x=>x.type==="فروش").length;
-document.getElementById("rentCount").innerText = data.filter(x=>x.type==="اجاره").length;
-document.getElementById("vipCount").innerText = data.filter(x=>x.vip).length;
+function showProperty(){
 
-let list = document.getElementById("list");
-list.innerHTML="";
+let id = selector.value;
+let x = data.find(i=>i.id == id);
 
-filtered.forEach(x=>{
+if(!x){
+view.innerHTML="";
+return;
+}
 
 let priceText =
 x.type==="فروش"
 ? `💰 ${x.price} میلیون تومان`
 : `🏦 رهن: ${x.mortgage} | اجاره: ${x.rent} میلیون`;
 
-list.innerHTML += `
-<div class="card" style="border:${x.vip?'2px solid gold':''}">
-<b>${x.title} ${x.vip?'⭐ VIP':''}</b><br>
+let imgs = "";
+
+if(x.images && x.images.length){
+imgs = `<div class="gallery">` +
+x.images.map(i=>`<img src="${i}">`).join("") +
+`</div>`;
+}
+
+view.innerHTML = `
+<div class="card">
+<b>${x.title}</b><br>
 📍 ${x.address}<br>
 ${priceText}<br>
 🏷 ${x.type}<br>
@@ -288,19 +231,12 @@ ${priceText}<br>
 📞 <a href="tel:${x.phone}">${x.phone}</a><br>
 📝 ${x.details}<br>
 
-${x.img ? `<img src="${x.img}">` : ""}
-
-<button class="vip" onclick="toggleVIP(${x.id})">VIP</button>
-<button class="edit" onclick="editItem(${x.id})">ویرایش</button>
-<button class="del" onclick="deleteItem(${x.id})">حذف</button>
-
+${imgs}
 </div>
 `;
-});
-
 }
 
-render();
+updateSelector();
 
 </script>
 

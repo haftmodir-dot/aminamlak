@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>امین املاک PRO</title>
+<title>امین املاک ULTRA</title>
 
 <style>
 body{
@@ -24,10 +24,10 @@ font-weight:bold;
 .stats{
 display:flex;
 justify-content:space-around;
-background:#1e293b;
+background:#111827;
 color:white;
 padding:10px;
-font-size:13px;
+font-size:12px;
 }
 
 .container{padding:15px;}
@@ -54,6 +54,17 @@ font-weight:bold;
 .vip{background:#f59e0b;color:black;}
 .edit{background:#3b82f6;color:white;}
 
+.filterBar{
+display:flex;
+gap:5px;
+}
+
+.filterBar button{
+flex:1;
+background:#334155;
+color:white;
+}
+
 .card{
 background:white;
 padding:10px;
@@ -72,12 +83,13 @@ margin-top:5px;
 
 <body>
 
-<header>🏠 امین املاک PRO</header>
+<header>🏠 امین املاک ULTRA</header>
 
 <div class="stats">
 <div>📦 کل: <span id="total">0</span></div>
 <div>🏷 فروش: <span id="saleCount">0</span></div>
 <div>🏠 اجاره: <span id="rentCount">0</span></div>
+<div>⭐ VIP: <span id="vipCount">0</span></div>
 </div>
 
 <div class="container">
@@ -94,10 +106,12 @@ margin-top:5px;
 <option value="اجاره">اجاره</option>
 </select>
 
+<!-- فروش -->
 <div id="saleBox">
 <input id="price" placeholder="قیمت (میلیون تومان)">
 </div>
 
+<!-- اجاره -->
 <div id="rentBox" style="display:none;">
 <input id="mortgage" placeholder="رهن (میلیون تومان)">
 <input id="rent" placeholder="اجاره (میلیون تومان)">
@@ -111,6 +125,13 @@ margin-top:5px;
 
 <button class="add" onclick="saveProperty()">ثبت / ذخیره</button>
 
+<div class="filterBar">
+<button onclick="setFilter('all')">همه</button>
+<button onclick="setFilter('فروش')">فروش</button>
+<button onclick="setFilter('اجاره')">اجاره</button>
+<button onclick="setFilter('vip')">VIP</button>
+</div>
+
 <h3>📋 لیست املاک</h3>
 <div id="list"></div>
 
@@ -118,8 +139,9 @@ margin-top:5px;
 
 <script>
 
-let data = JSON.parse(localStorage.getItem("amlakpro") || "[]");
+let data = JSON.parse(localStorage.getItem("amlak_ultra") || "[]");
 let editId = null;
+let filter = "all";
 
 function togglePrice(){
 let t = type.value;
@@ -145,6 +167,7 @@ phone:phone.value,
 details:details.value,
 img:e.target.result,
 vip:false,
+
 price: type.value==="فروش" ? price.value : null,
 mortgage: type.value==="اجاره" ? mortgage.value : null,
 rent: type.value==="اجاره" ? rent.value : null
@@ -157,13 +180,17 @@ editId = null;
 data.push(obj);
 }
 
-localStorage.setItem("amlakpro", JSON.stringify(data));
+save();
 clear();
 render();
 }
 
 if(file) reader.readAsDataURL(file);
 else reader.onload({target:{result:null}});
+}
+
+function save(){
+localStorage.setItem("amlak_ultra", JSON.stringify(data));
 }
 
 function clear(){
@@ -180,33 +207,38 @@ img.value="";
 
 function deleteItem(id){
 data = data.filter(x=>x.id!==id);
-localStorage.setItem("amlakpro", JSON.stringify(data));
+save();
 render();
 }
 
 function editItem(id){
 let x = data.find(i=>i.id===id);
 
-title.value = x.title;
-address.value = x.address;
-type.value = x.type;
-owner.value = x.owner;
-phone.value = x.phone;
-details.value = x.details;
+title.value=x.title;
+address.value=x.address;
+type.value=x.type;
+owner.value=x.owner;
+phone.value=x.phone;
+details.value=x.details;
 
 togglePrice();
 
-price.value = x.price || "";
-mortgage.value = x.mortgage || "";
-rent.value = x.rent || "";
+price.value=x.price||"";
+mortgage.value=x.mortgage||"";
+rent.value=x.rent||"";
 
-editId = id;
+editId=id;
 }
 
 function toggleVIP(id){
 let x = data.find(i=>i.id===id);
-x.vip = !x.vip;
-localStorage.setItem("amlakpro", JSON.stringify(data));
+x.vip=!x.vip;
+save();
+render();
+}
+
+function setFilter(f){
+filter=f;
 render();
 }
 
@@ -214,23 +246,35 @@ function render(){
 
 let s = search.value.toLowerCase();
 
-let filtered = data.filter(x=>
+let filtered = data.filter(x=>{
+
+let matchSearch =
 x.title.includes(s) ||
 x.address.includes(s) ||
 x.owner.includes(s) ||
-x.phone.includes(s)
-);
+x.phone.includes(s);
+
+let matchFilter =
+filter==="all" ||
+(filter==="فروش" && x.type==="فروش") ||
+(filter==="اجاره" && x.type==="اجاره") ||
+(filter==="vip" && x.vip);
+
+return matchSearch && matchFilter;
+});
 
 document.getElementById("total").innerText = data.length;
 document.getElementById("saleCount").innerText = data.filter(x=>x.type==="فروش").length;
 document.getElementById("rentCount").innerText = data.filter(x=>x.type==="اجاره").length;
+document.getElementById("vipCount").innerText = data.filter(x=>x.vip).length;
 
 let list = document.getElementById("list");
 list.innerHTML="";
 
 filtered.forEach(x=>{
 
-let priceText = x.type==="فروش"
+let priceText =
+x.type==="فروش"
 ? `💰 ${x.price} میلیون تومان`
 : `🏦 رهن: ${x.mortgage} | اجاره: ${x.rent} میلیون`;
 

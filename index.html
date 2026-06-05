@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>امین املاک</title>
+
+<style>
+body{font-family:sans-serif;direction:rtl;margin:0;background:#f3f4f6;}
+header{background:#111827;color:white;padding:15px;text-align:center;}
+.container{padding:15px;}
+input,select,textarea{width:100%;padding:10px;margin:5px 0;border-radius:10px;}
+button{width:100%;padding:12px;background:#16a34a;color:white;border:none;border-radius:10px;}
+.card{background:white;padding:10px;margin:10px 0;border-radius:10px;}
+img{width:100%;margin-top:5px;border-radius:10px;}
+</style>
+</head>
+
+<body>
+
+<header>🏠 امین املاک PWA</header>
+
+<div class="container">
+
+<input id="search" placeholder="جستجو..." onkeyup="render()">
+
+<h3>➕ ثبت ملک</h3>
+
+<input id="title" placeholder="عنوان">
+<input id="address" placeholder="آدرس">
+<input id="price" placeholder="قیمت">
+
+<select id="type">
+<option>فروش</option>
+<option>اجاره</option>
+</select>
+
+<input id="owner" placeholder="مالک">
+<input id="phone" placeholder="تلفن">
+<textarea id="details" placeholder="توضیحات"></textarea>
+
+<input type="file" id="img">
+
+<button onclick="add()">ثبت</button>
+
+<h3>📋 لیست املاک</h3>
+<div id="list"></div>
+
+</div>
+
+<script>
+
+let data = JSON.parse(localStorage.getItem("amlak") || "[]");
+
+function add(){
+
+let file = document.getElementById("img").files[0];
+
+let reader = new FileReader();
+
+reader.onload = function(e){
+
+let item = {
+title:title.value,
+address:address.value,
+price:price.value,
+type:type.value,
+owner:owner.value,
+phone:phone.value,
+details:details.value,
+img:e.target.result
+};
+
+data.push(item);
+localStorage.setItem("amlak", JSON.stringify(data));
+render();
+}
+
+if(file) reader.readAsDataURL(file);
+}
+
+function render(){
+
+let s = search.value.toLowerCase();
+let list = document.getElementById("list");
+
+list.innerHTML="";
+
+data.filter(x=>
+x.title.includes(s) ||
+x.address.includes(s) ||
+x.phone.includes(s)
+).forEach(x=>{
+
+list.innerHTML += `
+<div class="card">
+<b>${x.title}</b><br>
+📍 ${x.address}<br>
+💰 ${x.price}<br>
+🏷 ${x.type}<br>
+👤 ${x.owner}<br>
+📞 ${x.phone}<br>
+${x.details}<br>
+${x.img ? `<img src="${x.img}">` : ""}
+</div>
+`;
+});
+
+}
+
+render();
+
+</script>
+
+</body>
+</html>
